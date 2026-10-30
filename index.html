@@ -635,11 +635,8 @@ function navMode(){
   var w = window.innerWidth, h = window.innerHeight, portrait = h >= w;
   var touch = (window.matchMedia && matchMedia('(any-pointer: coarse)').matches) || (navigator.maxTouchPoints || 0) > 0;
   if (touch) {
-    if (isDuoOuter()) return 'rail';                       // iPhone Duo outer screen, any orientation
     if (!portrait && w <= 1100) return 'rail';              // phones held sideways, Duo inner screen sideways
-    var sq = Math.min(screen.width, screen.height) / Math.max(screen.width, screen.height);
-    if (portrait && w < 640 && w / h >= 0.64 && sq >= 0.6) return 'rail'; // split view on the Duo's squarer screens
-    if (portrait && w <= 1100) return 'bottom';             // regular phones upright, Duo inner screen upright
+    if (portrait && w <= 1100) return 'bottom';             // phones upright, including both iPhone Duo screens
   }
   if (portrait && w <= 760) return 'bottom';
   return 'top';
@@ -662,7 +659,7 @@ function applyNav(){
 window.addEventListener('resize', applyNav); window.addEventListener('orientationchange', applyNav); applyNav(); document.addEventListener('DOMContentLoaded', applyNav);
 /* Self-update: phones (especially home-screen apps) can keep an old copy of this page.
    On GitHub the page compares its build with version.json and reloads once when a newer build is published. */
-var BUILD = '2026-10-30g';
+var BUILD = '2026-10-30h';
 function checkBuild(){
   if (!/github\.io$/.test(location.hostname)) return;
   fetch('version.json?_=' + Date.now(), { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(v){
