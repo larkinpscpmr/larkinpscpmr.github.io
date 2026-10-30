@@ -25,7 +25,9 @@ a{color:var(--teal)}a:hover{color:var(--tealD)}
 h1,h2,h3{font-family:Outfit,sans-serif;margin:0}
 .mono{font-family:'IBM Plex Mono',monospace}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-header{background:var(--headerBg);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header{background:var(--headerBg);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;transition:transform .22s ease}
+header.tuck{transform:translateY(-100%)}
+@media (prefers-reduced-motion:reduce){header{transition:none}}
 .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
 .top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-top:16px}
 .brand{font-family:Outfit,sans-serif;font-weight:700;font-size:22px;letter-spacing:-.01em}
@@ -248,7 +250,7 @@ a.cell.now:hover{box-shadow:inset 0 0 0 3px var(--teal)}
 /* Foldables (iPhone Duo and similar): outer screen ~382px, inner 669-951px, short landscape heights */
 @media (min-width:641px) and (max-width:1100px){.search{flex:1 1 220px;max-width:340px;min-width:160px}.top{flex-wrap:nowrap}.brand{white-space:nowrap}}
 @media (min-width:641px) and (max-width:820px){.year{display:none}.brand{font-size:19px}}
-@media (max-height:700px){header{position:static}}
+
 @media (max-width:400px){.brand{font-size:15.5px;letter-spacing:-.015em}.top{gap:8px}}
 @media (max-width:360px){.brand{font-size:14.5px}}
 html{-webkit-text-size-adjust:100%}
@@ -258,7 +260,7 @@ main{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 /* ---------- Phone navigation: bottom bar on phones, right-side rail on foldables / sideways phones ---------- */
 .tabbar,.moresheet{display:none}
 .nav-bottom header nav[aria-label="Hub sections"],.nav-rail header nav[aria-label="Hub sections"]{display:none}
-.nav-bottom header,.nav-rail header{position:static}
+
 .tabbar{position:fixed;z-index:30;background:var(--headerBg);border-color:var(--line);border-style:solid;border-width:0;box-shadow:0 -1px 12px rgba(0,0,0,.05)}
 .tabbar a,.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:52px;padding:6px 2px;border:0;background:none;font:inherit;font-size:10.5px;font-weight:600;letter-spacing:.01em;color:var(--muted);text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .tabbar svg{width:24px;height:24px;flex:none}
@@ -333,6 +335,17 @@ main{container-type:inline-size}
   .talk .t{font-size:15px}
 }
 @container (max-width:340px){ .grid{grid-template-columns:1fr} .hero h1,.page-h h1{font-size:26px} }
+.mestrip{background:var(--night);color:var(--onDark);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.mestrip .r1{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mestrip .hi{font-family:Outfit,sans-serif;font-weight:600;font-size:19px}
+.mestrip .pg{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--sun);margin-left:6px}
+.mestrip .chg{position:relative;font-size:13px;font-weight:600;color:var(--sun);display:inline-flex;align-items:center;gap:4px;min-height:32px}
+.mestrip .chg select{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;font-size:16px}
+.mestrip .ln{font-size:14px;line-height:1.4;color:var(--onNight)}
+.mestrip .ln b{color:#fff;font-weight:600}
+.mestrip .k2{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--sun);margin-right:6px}
+.mestrip select.pick{height:46px;border-radius:12px;background:var(--night2);color:#fff;border:1px solid var(--night3);font-size:16px;width:100%}
+.mestrip .calbox{border-top:1px solid var(--night2);padding-top:10px}
 .you{background:var(--sun);color:#1C2B2E;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700;margin-left:6px}
 </style>
 </head>
@@ -659,7 +672,7 @@ function applyNav(){
 window.addEventListener('resize', applyNav); window.addEventListener('orientationchange', applyNav); applyNav(); document.addEventListener('DOMContentLoaded', applyNav);
 /* Self-update: phones (especially home-screen apps) can keep an old copy of this page.
    On GitHub the page compares its build with version.json and reloads once when a newer build is published. */
-var BUILD = '2026-10-30h';
+var BUILD = '2026-10-30i';
 function checkBuild(){
   if (!/github\.io$/.test(location.hostname)) return;
   fetch('version.json?_=' + Date.now(), { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(v){
@@ -678,6 +691,25 @@ if (/navdebug/.test(location.search)) {
     el.textContent = 'mode: '+navMode()+'\nsize: '+innerWidth+' x '+innerHeight+'  dpr '+devicePixelRatio+'\nscreen: '+screen.width+' x '+screen.height+'  duoOuter: '+isDuoOuter()+'\ncoarse: '+(matchMedia('(any-pointer: coarse)').matches)+'  touch points: '+(navigator.maxTouchPoints||0)+'\nversion: '+BUILD+'\n'+navigator.userAgent; };
   window.addEventListener('resize', dbg); window.addEventListener('load', dbg); setInterval(dbg, 1500);
 }
+function phoneLayout(){ return navMode() !== 'top'; }
+var LASTMODE = null;
+window.addEventListener('resize', function(){ var m = navMode(); if (LASTMODE !== null && m !== LASTMODE && D && !busy()) render(); LASTMODE = m; });
+(function(){
+  var lastY = window.scrollY, ticking = false;
+  window.addEventListener('scroll', function(){
+    if (ticking) return; ticking = true;
+    requestAnimationFrame(function(){
+      var y = window.scrollY, hd = document.querySelector('header'); ticking = false;
+      if (!hd) return;
+      var th = document.getElementById('themes'), q = document.getElementById('q');
+      var keep = MOREOPEN || (th && !th.hidden) || (q && document.activeElement === q);
+      if (keep || y < hd.offsetHeight) hd.classList.remove('tuck');
+      else if (y > lastY + 6) hd.classList.add('tuck');
+      else if (y < lastY - 6) hd.classList.remove('tuck');
+      lastY = y;
+    });
+  }, { passive: true });
+})();
 function setMore(v){ MOREOPEN = v; var el = document.getElementById('moresheet'); if (el) el.className = 'moresheet' + (v ? ' open' : ''); }
 function tabBar(){
   var inMore = MORE.some(function(t){ return t[0] === VIEW; });
@@ -724,6 +756,19 @@ function sessions(list){
     '</div></div>'; }).join('');
 }
 
+function pickMe(v){ store('hubme', v); CALOPEN = false; render(); }
+function meStrip(){
+  var mine = store('hubme') || '', p = D.people.filter(function(x){ return x.name===mine; })[0];
+  var opts = '<option value="">Choose your name</option>'+D.people.map(function(x){ return '<option '+(x.name===mine?'selected':'')+' value="'+esc(x.name)+'">'+esc(x.short)+(x.pgy?' · '+esc(x.pgy):'')+'</option>'; }).join('');
+  if (!p) return '<section class="mestrip" aria-label="Who are you"><div class="hi">Who are you?</div><div class="ln">Pick your name once. This device will remember it and show your rotation and talks here.</div><label class="sr" for="mepick">Your name</label><select id="mepick" class="pick" onchange="pickMe(this.value)">'+opts+'</select></section>';
+  var talk = (D.upcoming||[]).filter(function(d){ return isMe(d.presenter) && daysUntil(d.key) >= 0; })[0];
+  var tl = '';
+  if (talk) { var n = daysUntil(talk.key); tl = '<div class="ln"><span class="k2">PRESENTING</span><b>'+esc(talk.title)+'</b> · '+esc(talk.long)+' ('+(n===0?'today':(n===1?'tomorrow':'in '+n+' days'))+')</div>'; }
+  return '<section class="mestrip" aria-label="Your rotation"><div class="r1"><div><span class="hi">Hi, '+esc(nice(p.name).split(' ')[0])+'</span>'+(p.pgy?'<span class="pg">'+esc(p.pgy)+'</span>':'')+'</div>'+
+    '<label class="chg">Change ▾<select aria-label="Change who you are" onchange="pickMe(this.value)">'+opts+'</select></label></div>'+
+    '<div class="ln"><span class="k2">NOW</span><b>'+esc(p.current.join(' + ')||'—')+'</b></div>'+
+    '<div class="ln"><span class="k2">'+esc(String(D.nextChange||'NEXT').toUpperCase())+'</span>'+esc(p.next.join(' + ')||'—')+'</div>'+tl+calCard(p)+'</section>';
+}
 function meCard(){
   var mine = store('hubme') || '';
   var p = D.people.filter(function(x){return x.name===mine;})[0];
@@ -742,11 +787,11 @@ function home(){
     '<a class="btn night" href="#rotations" onclick="go(\'rotations\');return false;">Rotation guides <span aria-hidden="true">→</span></a>'+
     (D.inbox?'<a class="btn night" href="mailto:'+esc(D.inbox)+'?subject=Schedule%20change">Report a schedule change <span aria-hidden="true">→</span></a>':'')+
     (D.calendarLink?'<a class="btn night" href="'+esc(D.calendarLink)+'" target="_blank" rel="noopener">Add didactics to my calendar <span aria-hidden="true">→</span></a>':'')+'<a class="btn night" href="#wellness" onclick="go(\'wellness\');return false;">Send an anonymous suggestion <span aria-hidden="true">→</span></a></section>';
-  return '<section class="hero"><div style="flex:1 1 520px"><div class="eyebrow">PM&amp;R RESIDENCY · PALM SPRINGS · '+esc(D.year)+'</div><h1 style="margin-top:12px">'+headline()+'</h1><p class="lead">Rotation guides, the didactic calendar, the block schedule and study materials, kept current by the chiefs.</p></div>'+
+  return (phoneLayout()?meStrip():'')+'<section class="hero"><div style="flex:1 1 520px"><div class="eyebrow">PM&amp;R RESIDENCY · PALM SPRINGS · '+esc(D.year)+'</div><h1 style="margin-top:12px">'+headline()+'</h1><p class="lead">Rotation guides, the didactic calendar, the block schedule and study materials, kept current by the chiefs.</p></div>'+
     '<div class="today"><div class="k">TODAY</div><div class="d">'+esc(D.todayLong)+'</div><div class="s">'+esc(D.blockLabel)+' block · next change <strong style="color:#fff">'+esc(D.nextChange)+'</strong> (in '+D.daysToNext+' days)</div></div></section>'+a+
     wellnessNudge()+partyStrip()+'<div class="cols"><div class="main"><section class="card"><div class="row"><h2>This block · '+esc(D.blockLabel)+'</h2><a href="#schedule" onclick="go(\'schedule\');return false;" style="font-weight:600">Full schedule →</a></div>'+blocks+'</section>'+
     '<section class="card"><div><h2>Next didactics</h2><div class="sub">'+esc(D.didacticsTime)+' · next 4 weeks</div></div>'+sessions(D.upcoming28)+'<a href="#didactics" onclick="go(\'didactics\');return false;" style="font-weight:600">All didactics →</a></section></div>'+
-    '<aside class="side">'+meCard()+countdownCard()+att+contacts+actions+'</aside></div>';
+    '<aside class="side">'+(phoneLayout()?'':meCard())+countdownCard()+att+contacts+actions+'</aside></div>';
 }
 
 function didactics(){
