@@ -346,6 +346,29 @@ main{container-type:inline-size}
 .mestrip .k2{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--sun);margin-right:6px}
 .mestrip select.pick{height:46px;border-radius:12px;background:var(--night2);color:#fff;border:1px solid var(--night3);font-size:16px;width:100%}
 .mestrip .calbox{border-top:1px solid var(--night2);padding-top:10px}
+.fresh.off{color:var(--coralInk);font-weight:600}
+.sl{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.sbtn{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:999px;border:1.5px solid var(--teal);background:var(--teal);color:#fff;font:inherit;font-size:13.5px;font-weight:600;text-decoration:none;cursor:pointer}
+.sbtn:hover{color:#fff;filter:brightness(1.08)}
+.sbtn.ghost{background:var(--card);color:var(--teal);border-color:var(--edge)}
+.sbtn.ghost:hover{color:var(--tealD);border-color:var(--teal)}
+[data-theme="night"] .sbtn:not(.ghost){color:#0A1315}
+.upl{font-size:13.5px;font-weight:600;color:var(--teal)}
+.li .sl{margin-top:0}
+.sgrid .n{position:sticky;left:0;z-index:2;background:var(--card);padding-right:6px;box-shadow:-16px 0 0 var(--card),5px 0 0 var(--card)}
+.sgrid .p{position:sticky;left:0;z-index:2;justify-self:start;background:var(--card);box-shadow:-16px 0 0 var(--card)}
+.nav-bottom .sgrid,.nav-rail .sgrid{grid-template-columns:96px repeat(12,minmax(70px,1fr));min-width:0;font-size:12px}
+.nav-bottom .sgrid .n,.nav-rail .sgrid .n{font-size:13px}
+.nav-bottom .tablebox,.nav-rail .tablebox{padding:10px}
+.sgrid .n.mine{color:var(--tealInk);font-weight:700}
+.me-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--sun);margin-right:6px;flex:none}
+.cell.mine{outline:2px solid var(--sun);outline-offset:-1px}
+.jumps{display:flex;gap:8px;overflow-x:auto;align-items:center;padding:2px 0 14px;margin-bottom:6px;border-bottom:1px solid var(--line2);scrollbar-width:none}
+.jumps::-webkit-scrollbar{display:none}
+.jumps .jk{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--muted);flex:none}
+.jumps button{flex:none;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--edge);background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;white-space:nowrap}
+.jumps button:hover{border-color:var(--teal);color:var(--teal)}
+
 .you{background:var(--sun);color:#1C2B2E;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700;margin-left:6px}
 </style>
 </head>
@@ -357,7 +380,7 @@ main{container-type:inline-size}
 (function(){
   if (window.google && google.script && google.script.run) return;
   var API_URL = 'https://script.google.com/macros/s/AKfycbw5_wuu7uNnzlj0n8NKzDCX6wml1hOyQeMA-zMfOVBUYxeWci9v4kKQTdeCrdhfYnHz3A/exec';
-  var WRITES = { submitSuggestion: 1, wellnessRespond: 1, wellnessIdea: 1, wellnessVote: 1 };
+  var WRITES = { submitSuggestion: 1, wellnessRespond: 1, wellnessIdea: 1, wellnessVote: 1, uploadSlides: 1 };
   function call(fn, args, ok, fail){
     var req = WRITES[fn]
       ? fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args }) })
@@ -394,8 +417,9 @@ function tagClass(t){return t==='Lecture'?'t-Lecture':(t==='Board Questions'?'t-
 function groupClass(g){return {'Inpatient rehab':'g-rehab','Consults, Ortho, SNF':'g-core','Specialty':'g-spec','Elective':'g-elec','Split':'g-split'}[g]||'g-split';}
 
 var THEMES = [['palm','Palm Springs','#0E6B6B','#F2B45B'],['sunset','Desert Sunset','#B5523B','#F2B45B'],['ocean','Ocean','#1F5FA8','#F2C14E'],['grove','Palm Grove','#2F6B3A','#E9B949'],['night','Night shift','#0A1315','#4FB3AE']];
-function themeId(){ var t = store('hubtheme') || (D && D.defaultTheme) || 'palm'; t = String(t).toLowerCase(); return THEMES.some(function(x){return x[0]===t;}) ? t : 'palm'; }
+function themeId(){ var dark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches; var t = store('hubtheme') || (dark ? 'night' : '') || (D && D.defaultTheme) || 'palm'; t = String(t).toLowerCase(); return THEMES.some(function(x){return x[0]===t;}) ? t : 'palm'; }
 function applyTheme(){ document.documentElement.setAttribute('data-theme', themeId()); }
+if (window.matchMedia) { try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(){ if (!store('hubtheme')) { applyTheme(); if (D) render(); } }); } catch (e) {} }
 function setTheme(t){ store('hubtheme', t); applyTheme(); render(); }
 function toggleThemes(e){ if(e) e.stopPropagation(); var el=document.getElementById('themes'); if(el){ el.hidden=!el.hidden; } }
 document.addEventListener('click', function(e){ var el=document.getElementById('themes'); if(el && !el.hidden && !e.target.closest('.themebox')) el.hidden=true; });
@@ -577,13 +601,22 @@ function presenting(){
     (mine.length>3?'<div style="font-size:13px;color:var(--onNight)">+ '+(mine.length-3)+' more on the Didactics page</div>':'')+'</div>';
 }
 
+var OFFLINE = false;
+function saveCache(json){ store('hubcache', json); store('hubcacheAt', String(Date.now())); }
 function load(pass){
+  var cached = !pass && store('hubcache');
+  if (cached && !D) { try { D = JSON.parse(cached); LASTJSON = cached; LASTLOAD = +(store('hubcacheAt')||0); applyTheme(); route(); } catch (e) { D = null; } }
   google.script.run.withSuccessHandler(function(json){
     var d = JSON.parse(json);
-    if (d.needPasscode){ if (!pass && store('hubpass')) { store('hubpass',''); d.wrong = false; } gate(d); return; }
+    if (d.needPasscode){ D = null; store('hubcache',''); if (!pass && store('hubpass')) { store('hubpass',''); d.wrong = false; } gate(d); return; }
     if (pass) store('hubpass', pass);
-    D = d; LASTJSON = json; LASTLOAD = Date.now(); applyTheme(); route(); startRefresh();
+    OFFLINE = false; saveCache(json);
+    var same = json === LASTJSON;
+    D = d; LASTJSON = json; LASTLOAD = Date.now(); applyTheme();
+    if (!same) { var y = window.scrollY; route(); window.scrollTo(0, y); } else stamp();
+    startRefresh();
   }).withFailureHandler(function(err){
+    if (D) { OFFLINE = true; stamp(); startRefresh(); return; }
     document.getElementById('app').innerHTML='<div class="gate"><h1 style="font-size:28px">The Hub could not load</h1><p class="lead">'+esc(err && err.message)+'</p><p class="lead">Try again in a minute, or tell a chief.</p></div>';
   }).getData(pass || store('hubpass') || '');
 }
@@ -594,16 +627,21 @@ function busy(){ if (WBUSY) return true; var a = document.activeElement; var th 
 function refresh(){
   if (document.hidden) return;
   google.script.run.withSuccessHandler(function(json){
-    LASTLOAD = Date.now();
-    if (json === LASTJSON) { stamp(); return; }
+    LASTLOAD = Date.now(); OFFLINE = false;
+    if (json === LASTJSON) { saveCache(json); stamp(); return; }
     var d = JSON.parse(json); if (d.needPasscode) return;
     if (busy()) { setTimeout(refresh, 30000); return; }   // try again when they're not typing
-    LASTJSON = json; D = d;
+    LASTJSON = json; D = d; OFFLINE = false; saveCache(json);
     if (VIEW==='rotations' && SUB) { var r = (D.rotations||[]).filter(function(x){return x.code.toLowerCase()===SUB.toLowerCase();})[0]; if (r) { delete GUIDES[r.code]; } }
     var y = window.scrollY; applyTheme(); render(); window.scrollTo(0, y);
-  }).withFailureHandler(function(){ /* offline or Google hiccup: try again next round */ }).getData(store('hubpass') || '');
+  }).withFailureHandler(function(){ OFFLINE = true; stamp(); }).getData(store('hubpass') || '');
 }
-function stamp(){ var el = document.getElementById('fresh'); if (el) el.textContent = 'Up to date · checked ' + new Date(LASTLOAD).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); }
+function freshText(){
+  var t = LASTLOAD ? new Date(LASTLOAD) : null;
+  var when = t ? (new Date().toDateString() === t.toDateString() ? t.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : t.toLocaleDateString([], {month:'short', day:'numeric'})+', '+t.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})) : 'now';
+  return OFFLINE ? 'Offline · showing what was saved ' + when : 'Up to date · checked ' + when;
+}
+function stamp(){ var el = document.getElementById('fresh'); if (el) { el.textContent = freshText(); el.classList.toggle('off', OFFLINE); } }
 function startRefresh(){ if (TIMER) return; TIMER = setInterval(refresh, REFRESH_MS);
   document.addEventListener('visibilitychange', function(){ if (!document.hidden && Date.now() - LASTLOAD > REFRESH_MS) refresh(); }); }
 
@@ -672,7 +710,7 @@ function applyNav(){
 window.addEventListener('resize', applyNav); window.addEventListener('orientationchange', applyNav); applyNav(); document.addEventListener('DOMContentLoaded', applyNav);
 /* Self-update: phones (especially home-screen apps) can keep an old copy of this page.
    On GitHub the page compares its build with version.json and reloads once when a newer build is published. */
-var BUILD = '2026-10-30i';
+var BUILD = '2026-10-30j';
 function checkBuild(){
   if (!/github\.io$/.test(location.hostname)) return;
   fetch('version.json?_=' + Date.now(), { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(v){
@@ -684,6 +722,7 @@ function checkBuild(){
 }
 checkBuild();
 document.addEventListener('visibilitychange', function(){ if (!document.hidden) checkBuild(); });
+if ('serviceWorker' in navigator && /github\.io$/.test(location.hostname)) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
 setInterval(checkBuild, 5 * 60 * 1000);
 if (/navdebug/.test(location.search)) {
   var dbg = function(){ var el = document.getElementById('navdbg') || document.body.appendChild(Object.assign(document.createElement('div'), {id:'navdbg'}));
@@ -726,7 +765,7 @@ function shell(inner){
   var nav = TABS.map(function(t){return '<a href="#'+t[0]+'" '+(t[0]===VIEW?'class="on" aria-current="page"':'')+' onclick="go(\''+t[0]+'\');return false;">'+t[1]+'</a>';}).join('');
   return '<header><div class="wrap"><div class="top">'+LOGO+'<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><div class="brand">'+esc(D.program)+'</div><div class="year mono">'+esc(D.year)+'</div></div><div class="grow"></div>'+
    '<form class="search" role="search" onsubmit="event.preventDefault()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--muted)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><label class="sr" for="q">Search the hub</label><input id="q" type="search" placeholder="Search the Hub" value="'+esc(Q)+'" oninput="search(this.value)"></form>'+
-   themePicker()+'</div><nav aria-label="Hub sections">'+nav+'</nav></div></header><main id="main">'+inner+'<div class="fresh" id="fresh">Up to date · checked '+(LASTLOAD?new Date(LASTLOAD).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}):'now')+'</div></main>'+tabBar();
+   themePicker()+'</div><nav aria-label="Hub sections">'+nav+'</nav></div></header><main id="main">'+inner+'<div class="fresh'+(OFFLINE?' off':'')+'" id="fresh">'+esc(freshText())+'</div></main>'+tabBar();
 }
 function go(v){
   var parts = String(v).split('/');
@@ -740,11 +779,104 @@ function guideLink(code, text, cls){ return '<a href="'+guideHref(code)+'"'+(cls
 function render(){
   var html = Q ? searchView() : ({home:home,didactics:didactics,schedule:schedule,rotations:rotations,study:study,policies:policies,links:quickLinksPage,wellness:wellness}[VIEW])();
   document.getElementById('app').innerHTML = shell(html);
+  afterRender();
   if (Q){ var q=document.getElementById('q'); q.focus(); q.setSelectionRange(Q.length,Q.length); }
 }
 function search(v){ Q=v; render(); }
+function afterRender(){
+  if (VIEW === 'schedule' && !Q) {
+    var box = document.querySelector('.tablebox'), now = document.querySelector('.sgrid .h.now');
+    if (box && now && box.scrollWidth > box.clientWidth) box.scrollLeft = Math.max(0, now.offsetLeft - 200);
+  }
+  if (VIEW === 'home' && !Q && phoneLayout() && D) {
+    store('seenHome', '1');
+    if (D.announcement && D.announcement.title) store('seenBanner', D.announcement.title + '|' + (D.announcement.text||''));
+  }
+  addJumps();
+}
+function jumpTo(id){ var el = document.getElementById(id); if (!el) return; var y = el.getBoundingClientRect().top + window.scrollY - 16; window.scrollTo({ top: y, behavior: 'smooth' }); }
+function addJumps(){
+  var doc = document.querySelector('#guidebody-wrap .doc'); if (!doc || doc.dataset.j) return;
+  doc.dataset.j = '1';
+  var hs = doc.querySelectorAll('h2'); if (hs.length < 3) return;
+  var bar = document.createElement('div'); bar.className = 'jumps'; bar.setAttribute('aria-label', 'Jump to section');
+  var html = '<span class="jk">JUMP TO</span>';
+  hs.forEach(function(h, i){ h.id = 'sec-' + i; html += '<button type="button" onclick="jumpTo(\'sec-'+i+'\')">' + esc(h.textContent.trim()) + '</button>'; });
+  bar.innerHTML = html; doc.parentNode.insertBefore(bar, doc);
+}
+function scrollToMyRow(){ var el = document.querySelector('.sgrid .n.mine'); if (el) { var y = el.getBoundingClientRect().top + window.scrollY - 90; window.scrollTo({ top: y, behavior: 'smooth' }); } }
+/* Swipe left/right on phones to move between Home, Schedule, Guides and Didactics */
+(function(){
+  var sx = 0, sy = 0, st = 0, ok = false;
+  function scrollsSideways(el){ while (el && el !== document.body) { if (el.scrollWidth > el.clientWidth + 4 && /auto|scroll/.test(getComputedStyle(el).overflowX)) return true; el = el.parentElement; } return false; }
+  document.addEventListener('touchstart', function(e){
+    if (e.touches.length !== 1 || !D || !phoneLayout() || MOREOPEN || Q) { ok = false; return; }
+    var t = e.target; ok = !(t.closest && t.closest('input,select,textarea,.tabbar,.moresheet,.themes')) && !scrollsSideways(t);
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now();
+  }, { passive: true });
+  document.addEventListener('touchend', function(e){
+    if (!ok) return; ok = false;
+    var c = e.changedTouches[0], dx = c.clientX - sx, dy = c.clientY - sy;
+    if (Date.now() - st > 600 || Math.abs(dx) < 80 || Math.abs(dy) > 50 || Math.abs(dx) < Math.abs(dy) * 2) return;
+    var order = BAR.map(function(b){ return b[0]; }), i = order.indexOf(VIEW);
+    if (i < 0 || SUB) return;
+    var j = dx < 0 ? i + 1 : i - 1;
+    if (j >= 0 && j < order.length) go(order[j]);
+  }, { passive: true });
+})();
+
 
 /* ---------- views ---------- */
+function fileId(url){ var m = String(url||'').match(/\/d\/([a-zA-Z0-9_-]{20,})/) || String(url||'').match(/[?&]id=([a-zA-Z0-9_-]{20,})/); return m ? m[1] : ''; }
+function downloadUrl(url){
+  var id = fileId(url); if (!id) return '';
+  if (/docs\.google\.com\/presentation/.test(url)) return 'https://docs.google.com/presentation/d/'+id+'/export/pptx';
+  if (/docs\.google\.com\/document/.test(url)) return 'https://docs.google.com/document/d/'+id+'/export?format=pdf';
+  return 'https://drive.google.com/uc?export=download&id='+id;
+}
+var UPLOADING = {}, UPMSG = {};
+function talkKey(t){ return t.key+'|'+t.title; }
+function fileKeyId(k){ var h = 0; for (var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) | 0; return 'k' + (h >>> 0).toString(36); }
+function ic2(n){
+  var p = { dl:'<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>', up:'<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>', eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>' }[n];
+  return '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+}
+function slideActions(t){
+  if (!t.title || t.type === 'No session' || t.type === 'Self-study') return '';
+  var k = talkKey(t), id = fileKeyId(k), kk = esc(k).replace(/'/g, "\\'");
+  if (UPLOADING[k]) return '<div class="sl"><span class="upl">Uploading… keep this page open</span></div>';
+  var msg = UPMSG[k] ? '<div class="need" style="font-size:13px;margin-top:4px">'+esc(UPMSG[k])+'</div>' : '';
+  var input = '<input type="file" id="up-'+id+'" accept=".ppt,.pptx,.key,.pdf,.doc,.docx" hidden onchange="uploadFor(\''+kk+'\', this)">';
+  var pick = 'document.getElementById(\'up-'+id+'\').click()';
+  if (t.slides) {
+    var dl = downloadUrl(t.slides);
+    return '<div class="sl">'+(dl?'<a class="sbtn" href="'+esc(dl)+'" target="_blank" rel="noopener">'+ic2('dl')+'Download</a>':'')+
+      '<a class="sbtn ghost" href="'+esc(t.slides)+'" target="_blank" rel="noopener">'+ic2('eye')+'Open</a>'+
+      (isMe(t.presenter) && D.canUpload?'<button type="button" class="sbtn ghost" onclick="'+pick+'">'+ic2('up')+'Replace</button>'+input:'')+'</div>'+msg;
+  }
+  if (!D.canUpload || !isMe(t.presenter)) return '';
+  return '<div class="sl"><button type="button" class="sbtn'+(isMe(t.presenter)?'':' ghost')+'" onclick="'+pick+'">'+ic2('up')+'Upload slides</button>'+input+'</div>'+msg;
+}
+function findTalk(k){ return (D.upcoming||[]).concat(D.past||[]).filter(function(t){ return talkKey(t) === k; })[0]; }
+function uploadFor(k, input){
+  var f = input.files && input.files[0]; if (!f) return;
+  var t = findTalk(k); if (!t) return;
+  if (f.size > 25 * 1024 * 1024) { UPMSG[k] = 'That file is over 25 MB. Save it as a PDF or compress the images, then try again.'; render(); return; }
+  if (OFFLINE) { UPMSG[k] = 'You look offline. Try again when you have signal.'; render(); return; }
+  var reader = new FileReader();
+  reader.onload = function(){
+    var b64 = String(reader.result).split(',')[1] || '';
+    UPLOADING[k] = true; delete UPMSG[k]; var y = window.scrollY; render(); window.scrollTo(0, y);
+    google.script.run.withSuccessHandler(function(json){
+      delete UPLOADING[k]; var r = {}; try { r = JSON.parse(json); } catch (e) {}
+      if (r.ok) { t.slides = r.url; } else { UPMSG[k] = r.error === 'passcode' ? 'Please reopen the Hub and enter the passcode.' : 'That upload did not go through. Try again.'; }
+      var y2 = window.scrollY; render(); window.scrollTo(0, y2); if (r.ok) reloadNow();
+    }).withFailureHandler(function(){ delete UPLOADING[k]; UPMSG[k] = 'That upload did not go through. Check your connection and try again.'; render(); })
+      .uploadSlides(t.key, t.title, f.name, f.type || 'application/octet-stream', b64, store('hubme') || '', store('hubpass') || '');
+  };
+  reader.readAsDataURL(f);
+}
+
 function sessions(list){
   var by={}, order=[];
   list.forEach(function(d){ if(!by[d.key]){by[d.key]=[];order.push(d.key);} by[d.key].push(d); });
@@ -752,7 +884,7 @@ function sessions(list){
   return order.map(function(k){ var f=by[k][0];
     return '<div class="sess"><div class="date"><div class="a">'+f.dow+'</div><div class="b">'+f.day+'</div><div class="a">'+f.mon+'</div></div><div class="talks">'+
       by[k].map(function(t){ var who = t.presenter ? esc(nice(t.presenter))+(isMe(t.presenter)?'<span class="you">You</span>':'') : (t.type==='No session'||t.type==='Self-study' ? '' : '<span class="need">Presenter needed</span>');
-        return '<div class="talk"><div class="t">'+esc(t.title)+' <span class="tag '+tagClass(t.type)+'">'+esc(t.type)+'</span></div><div class="w">'+who+(t.slides?' · '+link(t.slides,'Slides'):'')+'</div></div>';}).join('')+
+        return '<div class="talk"><div class="t">'+esc(t.title)+' <span class="tag '+tagClass(t.type)+'">'+esc(t.type)+'</span></div><div class="w">'+who+'</div>'+slideActions(t)+'</div>';}).join('')+
     '</div></div>'; }).join('');
 }
 
@@ -778,7 +910,8 @@ function meCard(){
 }
 
 function home(){
-  var a = D.announcement.title ? '<section class="banner" aria-label="Announcement"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9A3A22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><div><b>'+esc(D.announcement.title)+'</b>'+esc(D.announcement.text)+'</div></section>' : '';
+  var seenB = phoneLayout() && store('seenBanner') === (D.announcement.title + '|' + (D.announcement.text||''));
+  var a = (D.announcement.title && !seenB) ? '<section class="banner" aria-label="Announcement"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9A3A22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><div><b>'+esc(D.announcement.title)+'</b>'+esc(D.announcement.text)+'</div></section>' : '';
   var blocks = D.blocks.length ? '<div class="grid">'+D.blocks.map(function(b){return '<a class="mini" href="'+guideHref(b.code)+'" onclick="go(\'rotations/'+esc(b.code).replace(/'/g,"\\'")+'\');return false;"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><b>'+esc(b.name)+'</b><span class="mono" style="font-size:12px;color:var(--muted);flex:none">'+b.people.length+'</span></div><div class="chips">'+b.people.map(function(p){return '<span class="chip">'+esc(p)+'</span>';}).join('')+'</div></a>';}).join('')+'</div>' : '<div class="empty">No schedule found for today. Check the Schedule tab name in Settings.</div>';
   var att = D.attention.length ? '<section class="card"><h2 style="font-size:22px">Needs attention</h2>'+D.attention.map(function(x){return '<div class="alert"><strong>Presenter needed</strong>&nbsp;for '+esc(x.title)+', '+esc(x.when)+'.</div>';}).join('')+'</section>' : '';
   var contacts = '<section class="card"><div><h2 style="font-size:22px">Key contacts</h2><div class="sub">Program leadership and chiefs</div></div>'+D.contacts.map(function(c){return '<div class="contact"><div class="r">'+esc(c.role)+'</div><div class="n">'+esc(c.name)+'</div>'+(c.email?'<a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>':'')+(c.phone?'<div class="r">'+esc(c.phone)+'</div>':'')+'</div>';}).join('')+'</section>';
@@ -787,7 +920,7 @@ function home(){
     '<a class="btn night" href="#rotations" onclick="go(\'rotations\');return false;">Rotation guides <span aria-hidden="true">→</span></a>'+
     (D.inbox?'<a class="btn night" href="mailto:'+esc(D.inbox)+'?subject=Schedule%20change">Report a schedule change <span aria-hidden="true">→</span></a>':'')+
     (D.calendarLink?'<a class="btn night" href="'+esc(D.calendarLink)+'" target="_blank" rel="noopener">Add didactics to my calendar <span aria-hidden="true">→</span></a>':'')+'<a class="btn night" href="#wellness" onclick="go(\'wellness\');return false;">Send an anonymous suggestion <span aria-hidden="true">→</span></a></section>';
-  return (phoneLayout()?meStrip():'')+'<section class="hero"><div style="flex:1 1 520px"><div class="eyebrow">PM&amp;R RESIDENCY · PALM SPRINGS · '+esc(D.year)+'</div><h1 style="margin-top:12px">'+headline()+'</h1><p class="lead">Rotation guides, the didactic calendar, the block schedule and study materials, kept current by the chiefs.</p></div>'+
+  return (phoneLayout()?meStrip():'')+'<section class="hero"><div style="flex:1 1 520px"><div class="eyebrow">PM&amp;R RESIDENCY · PALM SPRINGS · '+esc(D.year)+'</div><h1 style="margin-top:12px">'+headline()+'</h1>'+(phoneLayout() && store('seenHome')==='1' ? '' : '<p class="lead">Rotation guides, the didactic calendar, the block schedule and study materials, kept current by the chiefs.</p>')+'</div>'+
     '<div class="today"><div class="k">TODAY</div><div class="d">'+esc(D.todayLong)+'</div><div class="s">'+esc(D.blockLabel)+' block · next change <strong style="color:#fff">'+esc(D.nextChange)+'</strong> (in '+D.daysToNext+' days)</div></div></section>'+a+
     wellnessNudge()+partyStrip()+'<div class="cols"><div class="main"><section class="card"><div class="row"><h2>This block · '+esc(D.blockLabel)+'</h2><a href="#schedule" onclick="go(\'schedule\');return false;" style="font-weight:600">Full schedule →</a></div>'+blocks+'</section>'+
     '<section class="card"><div><h2>Next didactics</h2><div class="sub">'+esc(D.didacticsTime)+' · next 4 weeks</div></div>'+sessions(D.upcoming28)+'<a href="#didactics" onclick="go(\'didactics\');return false;" style="font-weight:600">All didactics →</a></section></div>'+
@@ -795,14 +928,14 @@ function home(){
 }
 
 function didactics(){
-  var past = D.past.length ? '<div class="list">'+D.past.map(function(d){return '<div class="li"><div><div class="t">'+esc(d.title)+'</div><div class="m">'+esc(d.long)+' · '+esc(nice(d.presenter))+'</div></div>'+(d.slides?link(d.slides,'Slides','btn ghost'):'<span class="m">No slides yet</span>')+'</div>';}).join('')+'</div>' : '<div class="empty">No past sessions yet.</div>';
+  var past = D.past.length ? '<div class="list">'+D.past.map(function(d){return '<div class="li"><div><div class="t">'+esc(d.title)+'</div><div class="m">'+esc(d.long)+' · '+esc(nice(d.presenter))+'</div></div>'+slideActions(d)+'</div>';}).join('')+'</div>' : '<div class="empty">No past sessions yet.</div>';
   return '<section class="page-h"><div class="eyebrow">'+esc(D.didacticsTime).toUpperCase()+'</div><h1>Didactics</h1><p class="lead" style="margin:0">Every upcoming session and the slides from past ones. Changes made by the academic chief show here and on the PM&amp;R Didactics calendar.</p>'+(D.calendarLink?'<div>'+link(D.calendarLink,'Add the didactics calendar','btn teal')+'</div>':'')+'</section>'+
-    '<div class="cols"><div class="main"><section class="card"><h2>Upcoming</h2>'+sessions(D.upcoming)+'</section></div><aside class="side"><section class="card"><h2 style="font-size:22px">Past sessions</h2>'+past+'</section></aside></div>';
+    (D.canUpload && !store('hubme') ? '<section class="nudge"><span>Presenting? Pick your name on Home to upload your slides here.</span><a href="#home" onclick="go(\'home\');return false;">Pick name →</a></section>' : '')+'<div class="cols"><div class="main"><section class="card"><h2>Upcoming</h2>'+sessions(D.upcoming)+'</section></div><aside class="side"><section class="card"><h2 style="font-size:22px">Past sessions</h2>'+past+'</section></aside></div>';
 }
 
 function rotFor(code){ return (D.rotations||[]).filter(function(x){ return x.code.toLowerCase()===String(code).toLowerCase(); })[0]; }
-function schedCell(c, now){
-  var cls = 'cell '+groupClass(c.group)+(now?' now':'');
+function schedCell(c, now, mine){
+  var cls = 'cell '+groupClass(c.group)+(now?' now':'')+(mine?' mine':'');
   if (c.codes.length === 1 && rotFor(c.codes[0])) { var r = rotFor(c.codes[0]);
     return '<a class="'+cls+'" href="'+guideHref(r.code)+'" title="'+esc(r.name)+' guide" onclick="go(\'rotations/'+esc(r.code).replace(/'/g,"\\'")+'\');return false;">'+esc(c.codes[0])+'</a>'; }
   return '<div class="'+cls+'">'+c.codes.map(function(code){ var r = rotFor(code);
@@ -813,8 +946,10 @@ function schedule(){
   var head = '<div></div>'+D.schedule.months.map(function(m,i){return '<div class="h'+(i===cur?' now':'')+'">'+esc(m)+'</div>';}).join('');
   var groups = {}; D.schedule.rows.forEach(function(r){ (groups[r.pgy||'—']=groups[r.pgy||'—']||[]).push(r); });
   var body = Object.keys(groups).sort().map(function(g){ return '<div class="p">'+esc(g)+'</div>'+groups[g].map(function(r){
-    return '<div class="n">'+esc(r.name)+'</div>'+r.cells.map(function(c,i){ return schedCell(c, i===cur); }).join('');}).join(''); }).join('');
-  return '<section class="hero"><div class="page-h" style="flex:1 1 520px"><div class="eyebrow">'+esc(D.year)+' · '+D.schedule.rows.length+' RESIDENTS</div><h1>Resident Schedule</h1><p class="lead" style="margin:0">The whole year at a glance; the current block is outlined. Tap any rotation to open its guide. Mid-month swaps entered by the chiefs show on the Home page and rotation guides.</p></div>'+
+    var mine = r.name === store('hubme');
+    var shortN = (D.people||[]).filter(function(x){ return x.name===r.name; }).map(function(x){ return x.short; })[0] || r.name;
+    return '<div class="n'+(mine?' mine':'')+'" title="'+esc(r.name)+'">'+(mine?'<span class="me-dot" aria-hidden="true"></span>':'')+(phoneLayout()?esc(shortN):esc(r.name))+(mine?'<span class="sr"> (you)</span>':'')+'</div>'+r.cells.map(function(c,i){ return schedCell(c, i===cur, mine); }).join('');}).join(''); }).join('');
+  return '<section class="hero"><div class="page-h" style="flex:1 1 520px"><div class="eyebrow">'+esc(D.year)+' · '+D.schedule.rows.length+' RESIDENTS</div><h1>Resident Schedule</h1><p class="lead" style="margin:0">The whole year at a glance; the current block is outlined. Tap any rotation to open its guide.'+(store('hubme')?' <a href="#schedule" onclick="scrollToMyRow();return false;" style="font-weight:600;white-space:nowrap">Jump to my row ↓</a>':'')+' Mid-month swaps entered by the chiefs show on the Home page and rotation guides.</p></div>'+
     '<div class="legend"><span><i class="sw g-rehab"></i>Inpatient rehab</span><span><i class="sw g-core"></i>Consults · Ortho · SNF</span><span><i class="sw g-spec"></i>EMG · Neuro · Pain · P&amp;O</span><span><i class="sw g-elec" style="border:1px solid #CFC7B9"></i>Elective</span></div></section>'+
     '<div class="tablebox"><div class="sgrid">'+head+body+'</div></div>';
 }
