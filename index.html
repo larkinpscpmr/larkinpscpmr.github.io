@@ -272,6 +272,7 @@ main{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 .nav-rail .tabbar a,.nav-rail .tabbar button{flex:0 0 auto;min-height:56px;font-size:10px;gap:2px}
 .nav-rail .tabbar .pill2{width:44px;height:30px}
 .nav-rail .tabbar svg{width:22px;height:22px}
+html.nav-rail{background:var(--headerBg)}
 .nav-rail body{padding-right:calc(60px + env(safe-area-inset-right,0px))}
 .nav-rail main{padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
 .moresheet.open{display:block;position:fixed;inset:0;z-index:40}
@@ -304,6 +305,7 @@ main{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 main{container-type:inline-size}
 @container (max-width:460px){
   .eyebrow{font-size:11px;letter-spacing:.08em}
+  .hero .eyebrow{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .hero{gap:14px}
   .hero h1,.page-h h1{font-size:29px;line-height:1.1;letter-spacing:-.02em}
   .hero h1 br{display:none}
@@ -616,16 +618,21 @@ function ic(k){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColo
 var BAR = [['home','Home'],['schedule','Schedule'],['rotations','Guides'],['didactics','Didactics']];
 var MORE = [['study','Study Materials'],['links','Quick Links'],['wellness','Wellness'],['policies','Policies']];
 var MOREOPEN = false;
+function isDuoOuter(){
+  // The iPhone Duo's outer screen is much squarer than a regular iPhone (about 466 x 678 points),
+  // so recognise it by the physical screen shape, not the page area (Safari keeps the system column outside the page).
+  var a = Math.min(screen.width, screen.height), b = Math.max(screen.width, screen.height);
+  return b > 0 && b < 760 && a / b >= 0.6;
+}
 function navMode(){
   var w = window.innerWidth, h = window.innerHeight, portrait = h >= w;
   var touch = (window.matchMedia && matchMedia('(any-pointer: coarse)').matches) || (navigator.maxTouchPoints || 0) > 0;
   if (touch) {
-    // Sideways phones and the iPhone Duo's screens in landscape: rail on the right
-    if (!portrait && w <= 1100) return 'rail';
-    // iPhone Duo outer screen and split view: wide-for-a-phone upright screens, rail on the right
-    if (portrait && w < 640 && w / h >= 0.64) return 'rail';
-    // Phones upright, including the Duo's inner screen even when Safari asks for the "desktop website"
-    if (portrait && w <= 1100) return 'bottom';
+    if (isDuoOuter()) return 'rail';                       // iPhone Duo outer screen, any orientation
+    if (!portrait && w <= 1100) return 'rail';              // phones held sideways, Duo inner screen sideways
+    var sq = Math.min(screen.width, screen.height) / Math.max(screen.width, screen.height);
+    if (portrait && w < 640 && w / h >= 0.64 && sq >= 0.6) return 'rail'; // split view on the Duo's squarer screens
+    if (portrait && w <= 1100) return 'bottom';             // regular phones upright, Duo inner screen upright
   }
   if (portrait && w <= 760) return 'bottom';
   return 'top';
@@ -638,7 +645,7 @@ window.addEventListener('resize', applyNav); window.addEventListener('orientatio
 if (/navdebug/.test(location.search)) {
   var dbg = function(){ var el = document.getElementById('navdbg') || document.body.appendChild(Object.assign(document.createElement('div'), {id:'navdbg'}));
     el.style.cssText = 'position:fixed;left:8px;top:8px;z-index:99;background:#12343B;color:#fff;font:12px/1.4 monospace;padding:8px 10px;border-radius:8px;max-width:90vw;white-space:pre-wrap';
-    el.textContent = 'mode: '+navMode()+'\nsize: '+innerWidth+' x '+innerHeight+'  dpr '+devicePixelRatio+'\ncoarse: '+(matchMedia('(any-pointer: coarse)').matches)+'  touch points: '+(navigator.maxTouchPoints||0)+'\nversion: 2026-10-30b\n'+navigator.userAgent; };
+    el.textContent = 'mode: '+navMode()+'\nsize: '+innerWidth+' x '+innerHeight+'  dpr '+devicePixelRatio+'\nscreen: '+screen.width+' x '+screen.height+'  duoOuter: '+isDuoOuter()+'\ncoarse: '+(matchMedia('(any-pointer: coarse)').matches)+'  touch points: '+(navigator.maxTouchPoints||0)+'\nversion: 2026-10-30c\n'+navigator.userAgent; };
   window.addEventListener('resize', dbg); window.addEventListener('load', dbg); setInterval(dbg, 1500);
 }
 function setMore(v){ MOREOPEN = v; var el = document.getElementById('moresheet'); if (el) el.className = 'moresheet' + (v ? ' open' : ''); }
