@@ -272,11 +272,15 @@ main{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 .nav-rail .tabbar a,.nav-rail .tabbar button{flex:0 0 auto;min-height:56px;font-size:10px;gap:2px}
 .nav-rail .tabbar .pill2{width:44px;height:30px}
 .nav-rail .tabbar svg{width:22px;height:22px}
-html.nav-rail:has(.tabbar){background:var(--headerBg)}
 body{min-height:100vh;min-height:100dvh;display:flow-root}
-.nav-rail body:has(.tabbar){background:linear-gradient(to left,var(--headerBg) 0 calc(60px + env(safe-area-inset-right,0px)),var(--sand) 0)}
 .gate{padding-top:max(0px,env(safe-area-inset-top,0px))}
-.nav-rail body:has(.tabbar){padding-right:calc(60px + env(safe-area-inset-right,0px))}
+/* Rail: when the phone gives the page its side column (home-screen app on the iPhone Duo),
+   the icons sit inside that column under the clock and Wi-Fi; otherwise a slim bar on the right edge. */
+.nav-rail body:has(.tabbar){padding-right:var(--railw,60px)}
+.nav-rail .tabbar{width:var(--railw,60px)!important;background:transparent!important;border:0!important;box-shadow:none!important}
+.rail-col .tabbar{justify-content:flex-start!important;padding:var(--railtop,170px) 0 calc(12px + env(safe-area-inset-bottom,0px)) 0!important;gap:4px!important}
+.rail-col .tabbar a,.rail-col .tabbar button{min-height:60px}
+.nav-rail:not(.rail-col) .tabbar{border-left:1px solid var(--line)!important}
 .nav-rail main{padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
 .moresheet.open{display:block;position:fixed;inset:0;z-index:40}
 .moresheet .scrim{position:absolute;inset:0;background:rgba(10,20,22,.38)}
@@ -640,14 +644,25 @@ function navMode(){
   if (portrait && w <= 760) return 'bottom';
   return 'top';
 }
+function sideInset(){
+  var d = document.getElementById('sai') || document.body.appendChild(Object.assign(document.createElement('div'), { id: 'sai' }));
+  d.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-right:env(safe-area-inset-right,0px);padding-top:env(safe-area-inset-top,0px)';
+  var cs = getComputedStyle(d); return { right: parseFloat(cs.paddingRight) || 0, top: parseFloat(cs.paddingTop) || 0 };
+}
 function applyNav(){
   var m = navMode(), el = document.documentElement;
+  var ins = document.body ? sideInset() : { right: 0, top: 0 };
+  var col = m === 'rail' && ins.right >= 40;   // page can use the phone's side column
+  el.classList.toggle('rail-col', col);
+  el.style.setProperty('--railw', col ? ins.right + 'px' : '60px');
+  // start the icons below the clock and Wi-Fi circle, which sit at the top of that column
+  el.style.setProperty('--railtop', col ? Math.round(Math.max(ins.top, 0) + ins.right * 2.05) + 'px' : '0px');
   el.classList.toggle('nav-bottom', m === 'bottom'); el.classList.toggle('nav-rail', m === 'rail');
 }
-window.addEventListener('resize', applyNav); window.addEventListener('orientationchange', applyNav); applyNav();
+window.addEventListener('resize', applyNav); window.addEventListener('orientationchange', applyNav); applyNav(); document.addEventListener('DOMContentLoaded', applyNav);
 /* Self-update: phones (especially home-screen apps) can keep an old copy of this page.
    On GitHub the page compares its build with version.json and reloads once when a newer build is published. */
-var BUILD = '2026-10-30e';
+var BUILD = '2026-10-30f';
 function checkBuild(){
   if (!/github\.io$/.test(location.hostname)) return;
   fetch('version.json?_=' + Date.now(), { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(v){
