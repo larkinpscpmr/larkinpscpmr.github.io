@@ -642,10 +642,25 @@ function applyNav(){
   el.classList.toggle('nav-bottom', m === 'bottom'); el.classList.toggle('nav-rail', m === 'rail');
 }
 window.addEventListener('resize', applyNav); window.addEventListener('orientationchange', applyNav); applyNav();
+/* Self-update: phones (especially home-screen apps) can keep an old copy of this page.
+   On GitHub the page compares its build with version.json and reloads once when a newer build is published. */
+var BUILD = '2026-10-30d';
+function checkBuild(){
+  if (!/github\.io$/.test(location.hostname)) return;
+  fetch('version.json?_=' + Date.now(), { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(v){
+    if (!v || !v.build || v.build === BUILD) return;
+    var k = 'reloadedFor';
+    try { if (sessionStorage.getItem(k) === v.build) return; sessionStorage.setItem(k, v.build); } catch (e) {}
+    location.reload();
+  }).catch(function(){});
+}
+checkBuild();
+document.addEventListener('visibilitychange', function(){ if (!document.hidden) checkBuild(); });
+setInterval(checkBuild, 5 * 60 * 1000);
 if (/navdebug/.test(location.search)) {
   var dbg = function(){ var el = document.getElementById('navdbg') || document.body.appendChild(Object.assign(document.createElement('div'), {id:'navdbg'}));
     el.style.cssText = 'position:fixed;left:8px;top:8px;z-index:99;background:#12343B;color:#fff;font:12px/1.4 monospace;padding:8px 10px;border-radius:8px;max-width:90vw;white-space:pre-wrap';
-    el.textContent = 'mode: '+navMode()+'\nsize: '+innerWidth+' x '+innerHeight+'  dpr '+devicePixelRatio+'\nscreen: '+screen.width+' x '+screen.height+'  duoOuter: '+isDuoOuter()+'\ncoarse: '+(matchMedia('(any-pointer: coarse)').matches)+'  touch points: '+(navigator.maxTouchPoints||0)+'\nversion: 2026-10-30c\n'+navigator.userAgent; };
+    el.textContent = 'mode: '+navMode()+'\nsize: '+innerWidth+' x '+innerHeight+'  dpr '+devicePixelRatio+'\nscreen: '+screen.width+' x '+screen.height+'  duoOuter: '+isDuoOuter()+'\ncoarse: '+(matchMedia('(any-pointer: coarse)').matches)+'  touch points: '+(navigator.maxTouchPoints||0)+'\nversion: '+BUILD+'\n'+navigator.userAgent; };
   window.addEventListener('resize', dbg); window.addEventListener('load', dbg); setInterval(dbg, 1500);
 }
 function setMore(v){ MOREOPEN = v; var el = document.getElementById('moresheet'); if (el) el.className = 'moresheet' + (v ? ' open' : ''); }
