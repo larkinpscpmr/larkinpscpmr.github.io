@@ -582,12 +582,17 @@ var BAR = [['home','Home'],['schedule','Schedule'],['rotations','Guides'],['dida
 var MORE = [['study','Study Materials'],['links','Quick Links'],['wellness','Wellness'],['policies','Policies']];
 var MOREOPEN = false;
 function navMode(){
-  var w = window.innerWidth, h = window.innerHeight;
-  var touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
-  // Side rail: foldable outer screens (wide for a phone) and phones held sideways, as on the iPhone Duo
-  if (touch && w <= 1100 && (w > h || (w < 640 && w / h >= 0.64))) return 'rail';
-  // Bottom bar: phones held upright, and the Duo's inner screen in portrait
-  if (w <= 760 && (touch || h > w)) return 'bottom';
+  var w = window.innerWidth, h = window.innerHeight, portrait = h >= w;
+  var touch = (window.matchMedia && matchMedia('(any-pointer: coarse)').matches) || (navigator.maxTouchPoints || 0) > 0;
+  if (touch) {
+    // Sideways phones and the iPhone Duo's screens in landscape: rail on the right
+    if (!portrait && w <= 1100) return 'rail';
+    // iPhone Duo outer screen and split view: wide-for-a-phone upright screens, rail on the right
+    if (portrait && w < 640 && w / h >= 0.64) return 'rail';
+    // Phones upright, including the Duo's inner screen even when Safari asks for the "desktop website"
+    if (portrait && w <= 1100) return 'bottom';
+  }
+  if (portrait && w <= 760) return 'bottom';
   return 'top';
 }
 function applyNav(){
@@ -595,6 +600,12 @@ function applyNav(){
   el.classList.toggle('nav-bottom', m === 'bottom'); el.classList.toggle('nav-rail', m === 'rail');
 }
 window.addEventListener('resize', applyNav); window.addEventListener('orientationchange', applyNav); applyNav();
+if (/navdebug/.test(location.search)) {
+  var dbg = function(){ var el = document.getElementById('navdbg') || document.body.appendChild(Object.assign(document.createElement('div'), {id:'navdbg'}));
+    el.style.cssText = 'position:fixed;left:8px;top:8px;z-index:99;background:#12343B;color:#fff;font:12px/1.4 monospace;padding:8px 10px;border-radius:8px;max-width:90vw;white-space:pre-wrap';
+    el.textContent = 'mode: '+navMode()+'\nsize: '+innerWidth+' x '+innerHeight+'  dpr '+devicePixelRatio+'\ncoarse: '+(matchMedia('(any-pointer: coarse)').matches)+'  touch points: '+(navigator.maxTouchPoints||0)+'\nversion: 2026-10-30b\n'+navigator.userAgent; };
+  window.addEventListener('resize', dbg); window.addEventListener('load', dbg); setInterval(dbg, 1500);
+}
 function setMore(v){ MOREOPEN = v; var el = document.getElementById('moresheet'); if (el) el.className = 'moresheet' + (v ? ' open' : ''); }
 function tabBar(){
   var inMore = MORE.some(function(t){ return t[0] === VIEW; });
