@@ -268,9 +268,11 @@ main{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 .tabbar .on .pill2{background:var(--tealT)}
 .nav-bottom .tabbar{display:flex;left:0;right:0;bottom:0;border-top-width:1px;padding:4px max(6px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px))}
 .nav-bottom main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-.nav-rail .tabbar{display:flex;flex-direction:column;justify-content:center;gap:6px;top:0;bottom:0;right:0;width:calc(76px + env(safe-area-inset-right,0px));border-left-width:1px;padding:calc(10px + env(safe-area-inset-top,0px)) env(safe-area-inset-right,0px) calc(10px + env(safe-area-inset-bottom,0px)) 0;box-shadow:-1px 0 12px rgba(0,0,0,.05)}
-.nav-rail .tabbar a,.nav-rail .tabbar button{flex:0 0 auto;min-height:58px}
-.nav-rail body{padding-right:calc(76px + env(safe-area-inset-right,0px))}
+.nav-rail .tabbar{display:flex;flex-direction:column;justify-content:center;gap:2px;top:0;bottom:0;right:0;width:calc(60px + env(safe-area-inset-right,0px));border-left-width:1px;padding:calc(10px + env(safe-area-inset-top,0px)) env(safe-area-inset-right,0px) calc(10px + env(safe-area-inset-bottom,0px)) 0;box-shadow:-1px 0 12px rgba(0,0,0,.05)}
+.nav-rail .tabbar a,.nav-rail .tabbar button{flex:0 0 auto;min-height:56px;font-size:10px;gap:2px}
+.nav-rail .tabbar .pill2{width:44px;height:30px}
+.nav-rail .tabbar svg{width:22px;height:22px}
+.nav-rail body{padding-right:calc(60px + env(safe-area-inset-right,0px))}
 .nav-rail main{padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
 .moresheet.open{display:block;position:fixed;inset:0;z-index:40}
 .moresheet .scrim{position:absolute;inset:0;background:rgba(10,20,22,.38)}
@@ -289,6 +291,39 @@ main{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 .swrow button.on{border-color:var(--teal);background:var(--tealT);color:var(--tealInk)}
 .swrow .sw2{width:20px;height:20px;border-radius:6px;flex:none}
 .moresheet a svg{width:22px;height:22px;flex:none;color:var(--teal)}
+/* Compact phone header */
+.nav-bottom header .wrap,.nav-rail header .wrap{padding:0 14px}
+.nav-bottom .top,.nav-rail .top{padding:10px 0 10px;gap:10px}
+.nav-bottom .top svg[width="40"],.nav-rail .top svg[width="40"]{width:32px;height:32px}
+.nav-bottom .brand,.nav-rail .brand{font-size:16px;line-height:1.2}
+.nav-bottom .year,.nav-rail .year{display:none}
+.nav-bottom .search,.nav-rail .search{height:40px;flex:1 1 100%;order:3;padding:0 14px}
+.nav-bottom .search input,.nav-rail .search input{font-size:16px}
+.nav-bottom main,.nav-rail main{padding-top:18px;padding-left:14px;padding-right:14px;gap:16px}
+/* Size text and cards to the width the page really has (narrow phones, the Duo's outer screen) */
+main{container-type:inline-size}
+@container (max-width:460px){
+  .eyebrow{font-size:11px;letter-spacing:.08em}
+  .hero{gap:14px}
+  .hero h1,.page-h h1{font-size:29px;line-height:1.1;letter-spacing:-.02em}
+  .hero h1 br{display:none}
+  .lead{font-size:15px;line-height:1.5;margin-top:8px}
+  .today{padding:14px 16px;border-radius:14px;flex-basis:100%}
+  .today .d{font-size:21px;margin:2px 0}
+  .today .s{font-size:13.5px}
+  .banner,.nudge,.party{padding:12px 14px;border-radius:14px;font-size:14px;gap:10px}
+  .card{padding:16px;border-radius:16px;gap:12px}
+  .card h2{font-size:20px}
+  .cols,.main,.side{gap:16px}
+  .grid{grid-template-columns:1fr 1fr;gap:10px}
+  .mini{padding:12px;gap:8px}
+  .mini b{font-size:14px;line-height:1.25}
+  .chip{font-size:12px;padding:3px 8px}
+  .rgrid{grid-template-columns:1fr;gap:14px}
+  .sess{gap:12px}.date{width:56px}.date .b{font-size:24px}
+  .talk .t{font-size:15px}
+}
+@container (max-width:340px){ .grid{grid-template-columns:1fr} .hero h1,.page-h h1{font-size:26px} }
 .you{background:var(--sun);color:#1C2B2E;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700;margin-left:6px}
 </style>
 </head>
