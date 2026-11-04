@@ -369,6 +369,8 @@ main{container-type:inline-size}
 .jumps button{flex:none;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--edge);background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;white-space:nowrap}
 .jumps button:hover{border-color:var(--teal);color:var(--teal)}
 
+.aff{display:block;font-size:.88em;color:var(--muted);font-weight:400;margin-top:1px}
+.pn{font-weight:inherit}
 .you{background:var(--sun);color:#1C2B2E;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700;margin-left:6px}
 </style>
 </head>
@@ -412,7 +414,25 @@ var TABS = [['home','Home'],['didactics','Didactics'],['schedule','Resident Sche
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
 function link(url,text,cls){return url?'<a href="'+esc(url)+'" target="_blank" rel="noopener"'+(cls?' class="'+cls+'"':'')+'>'+text+'</a>':'';}
-function nice(n){n=String(n||'');var i=n.indexOf(',');return i>0?n.slice(i+1).trim()+' '+n.slice(0,i).trim():n;}
+var CRED = /^(MD|DO|PhD|MPH|MS|MSc|MA|MBA|PT|DPT|OT|OTR|OTD|PA|PA-C|NP|APRN|RN|BSN|MSN|DNP|CPO|CP|LP|CO|ATC|CSCS|PharmD|EdD|PsyD|FAAPMR|FAAP|FACP|FACS|Jr\.?|Sr\.?|II|III|IV)$/i;
+/* "Last, First" (how residents are stored) becomes "First Last". Anything else, such as a guest speaker
+   written "Walter R. Frontera, MD, PhD (University of Puerto Rico)", is left as written. */
+function nice(n){
+  n = String(n||'').trim();
+  if (/[()]/.test(n)) return n;
+  var parts = n.split(',');
+  if (parts.length !== 2) return n;
+  var last = parts[0].trim(), first = parts[1].trim();
+  if (!first || !last || CRED.test(first.replace(/\s+/g,''))) return n;
+  return first + ' ' + last;
+}
+/* Presenter for display: name (and credentials) in normal text, the institution in parentheses on a smaller line */
+function presenterHtml(n){
+  n = String(n||'').trim(); if (!n) return '';
+  var m = n.match(/^(.*?)\s*\(([^()]*)\)\s*$/);
+  if (!m) return esc(nice(n));
+  return '<span class="pn">'+esc(nice(m[1]))+'</span><span class="aff">'+esc(m[2])+'</span>';
+}
 function tagClass(t){return t==='Lecture'?'t-Lecture':(t==='Board Questions'?'t-Board':'t-Other');}
 function groupClass(g){return {'Inpatient rehab':'g-rehab','Consults, Ortho, SNF':'g-core','Specialty':'g-spec','Elective':'g-elec','Split':'g-split'}[g]||'g-split';}
 
@@ -710,7 +730,7 @@ function applyNav(){
 window.addEventListener('resize', applyNav); window.addEventListener('orientationchange', applyNav); applyNav(); document.addEventListener('DOMContentLoaded', applyNav);
 /* Self-update: phones (especially home-screen apps) can keep an old copy of this page.
    On GitHub the page compares its build with version.json and reloads once when a newer build is published. */
-var BUILD = '2026-10-30j';
+var BUILD = '2026-11-04a';
 function checkBuild(){
   if (!/github\.io$/.test(location.hostname)) return;
   fetch('version.json?_=' + Date.now(), { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(v){
@@ -883,7 +903,7 @@ function sessions(list){
   if(!order.length) return '<div class="empty">No sessions scheduled.</div>';
   return order.map(function(k){ var f=by[k][0];
     return '<div class="sess"><div class="date"><div class="a">'+f.dow+'</div><div class="b">'+f.day+'</div><div class="a">'+f.mon+'</div></div><div class="talks">'+
-      by[k].map(function(t){ var who = t.presenter ? esc(nice(t.presenter))+(isMe(t.presenter)?'<span class="you">You</span>':'') : (t.type==='No session'||t.type==='Self-study' ? '' : '<span class="need">Presenter needed</span>');
+      by[k].map(function(t){ var who = t.presenter ? presenterHtml(t.presenter)+(isMe(t.presenter)?'<span class="you">You</span>':'') : (t.type==='No session'||t.type==='Self-study' ? '' : '<span class="need">Presenter needed</span>');
         return '<div class="talk"><div class="t">'+esc(t.title)+' <span class="tag '+tagClass(t.type)+'">'+esc(t.type)+'</span></div><div class="w">'+who+'</div>'+slideActions(t)+'</div>';}).join('')+
     '</div></div>'; }).join('');
 }
@@ -928,7 +948,7 @@ function home(){
 }
 
 function didactics(){
-  var past = D.past.length ? '<div class="list">'+D.past.map(function(d){return '<div class="li"><div><div class="t">'+esc(d.title)+'</div><div class="m">'+esc(d.long)+' · '+esc(nice(d.presenter))+'</div></div>'+slideActions(d)+'</div>';}).join('')+'</div>' : '<div class="empty">No past sessions yet.</div>';
+  var past = D.past.length ? '<div class="list">'+D.past.map(function(d){return '<div class="li"><div><div class="t">'+esc(d.title)+'</div><div class="m">'+esc(d.long)+' · '+presenterHtml(d.presenter)+'</div></div>'+slideActions(d)+'</div>';}).join('')+'</div>' : '<div class="empty">No past sessions yet.</div>';
   return '<section class="page-h"><div class="eyebrow">'+esc(D.didacticsTime).toUpperCase()+'</div><h1>Didactics</h1><p class="lead" style="margin:0">Every upcoming session and the slides from past ones. Changes made by the academic chief show here and on the PM&amp;R Didactics calendar.</p>'+(D.calendarLink?'<div>'+link(D.calendarLink,'Add the didactics calendar','btn teal')+'</div>':'')+'</section>'+
     (D.canUpload && !store('hubme') ? '<section class="nudge"><span>Presenting? Pick your name on Home to upload your slides here.</span><a href="#home" onclick="go(\'home\');return false;">Pick name →</a></section>' : '')+'<div class="cols"><div class="main"><section class="card"><h2>Upcoming</h2>'+sessions(D.upcoming)+'</section></div><aside class="side"><section class="card"><h2 style="font-size:22px">Past sessions</h2>'+past+'</section></aside></div>';
 }
@@ -1069,7 +1089,7 @@ function study(){
   var items = D.study.filter(function(x){return TOPIC==='All'||x.topic===TOPIC;});
   var pills = ['All'].concat(D.topics).map(function(t){return '<button type="button" class="pill'+(t===TOPIC?' on':'')+'" onclick="TOPIC=\''+t.replace(/'/g,"\\'")+'\';render()">'+esc(t)+'</button>';}).join('');
   var lib = items.length ? '<div class="list">'+items.map(studyItem).join('')+'</div>' : '<div class="empty">'+(D.study.length?'Nothing under this topic yet.':'The library is ready for its first resource.')+'</div>';
-  var slides = D.lectureSlides.length ? '<div class="list">'+D.lectureSlides.map(function(d){return '<div class="li"><div><div class="t">'+esc(d.title)+'</div><div class="m">'+esc(d.long)+' · '+esc(nice(d.presenter))+'</div></div>'+link(d.slides,'Slides','btn ghost')+'</div>';}).join('')+'</div>' : '<div class="empty">Lecture slides appear here once presenters add them.</div>';
+  var slides = D.lectureSlides.length ? '<div class="list">'+D.lectureSlides.map(function(d){return '<div class="li"><div><div class="t">'+esc(d.title)+'</div><div class="m">'+esc(d.long)+' · '+presenterHtml(d.presenter)+'</div></div>'+link(d.slides,'Slides','btn ghost')+'</div>';}).join('')+'</div>' : '<div class="empty">Lecture slides appear here once presenters add them.</div>';
   return '<section class="page-h"><div class="eyebrow">SHARED LIBRARY · OPEN TO ALL RESIDENTS</div><h1>Study Materials</h1><p class="lead" style="margin:0">Slides, articles, videos and question banks, tagged by topic. Upload once and it is filed in the program Drive for everyone.</p></section>'+
     '<div class="cols"><div class="main"><div class="pills">'+pills+'</div><section class="card"><h2>Library</h2>'+lib+'</section><section class="card"><h2>Recent lecture slides</h2>'+slides+'</section></div>'+
     '<aside class="side"><section class="card dark"><h2 style="font-size:22px">Add a resource</h2><p style="margin:0;font-size:15px;line-height:1.5;color:var(--onNight)">Upload a file or share a link. Pick a topic so others can find it.</p>'+(D.uploadForm?'<a class="btn sun" href="'+esc(D.uploadForm)+'" target="_blank" rel="noopener">Open the upload form <span aria-hidden="true">→</span></a>':'<div class="sub" style="color:var(--onNight)">Upload form not set up yet.</div>')+'</section></aside></div>';
@@ -1093,7 +1113,7 @@ function searchView(){
   return '<section class="page-h"><div class="eyebrow">SEARCH</div><h1>Results for “'+esc(Q)+'”</h1></section>'+(none?'<div class="card"><div class="empty">Nothing matched. Try a rotation, a resident or a lecture topic.</div></div>':'')+
     (ppl.length?'<section class="card"><h2>Residents</h2><div class="list">'+ppl.map(function(p){return '<div class="li"><div><div class="t">'+esc(p.name)+'</div><div class="m">'+esc(p.pgy)+'</div></div><div class="m">Now: <b>'+esc(p.current.join(' + ')||'—')+'</b> · Next: '+esc(p.next.join(' + ')||'—')+'</div></div>';}).join('')+'</div></section>':'')+
     (rots.length?'<div class="rgrid">'+rots.map(rotationCard).join('')+'</div>':'')+
-    (did.length?'<section class="card"><h2>Didactics</h2><div class="list">'+did.map(function(d){return '<div class="li"><div><div class="t">'+esc(d.title)+'</div><div class="m">'+esc(d.long)+' · '+esc(nice(d.presenter))+'</div></div>'+(d.slides?link(d.slides,'Slides','btn ghost'):'')+'</div>';}).join('')+'</div></section>':'')+
+    (did.length?'<section class="card"><h2>Didactics</h2><div class="list">'+did.map(function(d){return '<div class="li"><div><div class="t">'+esc(d.title)+'</div><div class="m">'+esc(d.long)+' · '+presenterHtml(d.presenter)+'</div></div>'+(d.slides?link(d.slides,'Slides','btn ghost'):'')+'</div>';}).join('')+'</div></section>':'')+
     (st.length?'<section class="card"><h2>Study materials</h2><div class="list">'+st.map(studyItem).join('')+'</div></section>':'');
 }
 
