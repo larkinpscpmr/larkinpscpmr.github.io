@@ -371,6 +371,10 @@ main{container-type:inline-size}
 
 .aff{display:block;font-size:.88em;color:var(--muted);font-weight:400;margin-top:1px}
 .pn{font-weight:inherit}
+.dgrp{display:flex;flex-direction:column;gap:2px}
+.dgrp+.dgrp{margin-top:10px}
+.dgh{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);padding:6px 0 2px;border-bottom:1px solid var(--line2)}
+.dgh span{color:var(--muted);margin-left:4px}
 .you{background:var(--sun);color:#1C2B2E;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700;margin-left:6px}
 </style>
 </head>
@@ -730,7 +734,7 @@ function applyNav(){
 window.addEventListener('resize', applyNav); window.addEventListener('orientationchange', applyNav); applyNav(); document.addEventListener('DOMContentLoaded', applyNav);
 /* Self-update: phones (especially home-screen apps) can keep an old copy of this page.
    On GitHub the page compares its build with version.json and reloads once when a newer build is published. */
-var BUILD = '2026-11-04a';
+var BUILD = '2026-11-04b';
 function checkBuild(){
   if (!/github\.io$/.test(location.hostname)) return;
   fetch('version.json?_=' + Date.now(), { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(v){
@@ -1085,13 +1089,37 @@ function rotationsGrid(){
 function studyItem(x){
   return '<div class="li"><div style="min-width:0"><div class="t">'+(x.recommended?'<span class="star">★ Recommended</span> ':'')+esc(x.title)+'</div><div class="m">'+[x.type,x.topic,x.by,x.added].filter(Boolean).map(esc).join(' · ')+'</div>'+(x.description?'<div class="m" style="margin-top:4px">'+esc(x.description)+'</div>':'')+'</div>'+link(x.url,'Open','btn ghost')+'</div>';
 }
+function themeMatches(theme, topic){
+  if (!topic || topic === 'All' || topic === 'Didactics') return true;
+  var w = String(topic).split(/[\s\/&-]+/)[0].toLowerCase();
+  return !!w && String(theme||'').toLowerCase().indexOf(w) >= 0;
+}
+function slideButtons(d){
+  var dl = downloadUrl(d.slides);
+  return '<div class="sl" style="margin:0">'+(dl?'<a class="sbtn" href="'+esc(dl)+'" target="_blank" rel="noopener">'+ic2('dl')+'Download</a>':'')+'<a class="sbtn ghost" href="'+esc(d.slides)+'" target="_blank" rel="noopener">'+ic2('eye')+'Open</a></div>';
+}
+function todayKeyLocal(){ var t = new Date(); return t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2); }
+function didacticsLibrary(topic){
+  var all = (D.past||[]).concat(D.upcoming||[]).filter(function(d){ return d.slides && themeMatches(d.theme, topic); });
+  all.sort(function(a,b){ return b.key.localeCompare(a.key); });
+  if (!all.length) return '<div class="empty">'+(topic && topic!=='All' && topic!=='Didactics' ? 'No lecture slides on this topic yet.' : 'No lecture slides yet. They appear here as presenters upload them.')+'</div>';
+  var groups = [], by = {};
+  all.forEach(function(d){ var g = d.theme || 'Other'; if (!by[g]) { by[g] = []; groups.push(g); } by[g].push(d); });
+  return groups.map(function(g){
+    return '<div class="dgrp"><div class="dgh">'+esc(g)+' <span>'+by[g].length+'</span></div><div class="list">'+by[g].map(function(d){
+      var soon = d.key >= todayKeyLocal();
+      return '<div class="li"><div style="min-width:0"><div class="t">'+esc(d.title)+(soon?' <span class="tag t-Other">Upcoming</span>':'')+'</div><div class="m">'+esc(d.long)+(d.presenter?' · '+presenterHtml(d.presenter):'')+'</div></div>'+slideButtons(d)+'</div>';
+    }).join('')+'</div></div>';
+  }).join('');
+}
 function study(){
+  var onlyDid = TOPIC === 'Didactics';
   var items = D.study.filter(function(x){return TOPIC==='All'||x.topic===TOPIC;});
-  var pills = ['All'].concat(D.topics).map(function(t){return '<button type="button" class="pill'+(t===TOPIC?' on':'')+'" onclick="TOPIC=\''+t.replace(/'/g,"\\'")+'\';render()">'+esc(t)+'</button>';}).join('');
+  var pills = ['All','Didactics'].concat(D.topics).map(function(t){return '<button type="button" class="pill'+(t===TOPIC?' on':'')+'" onclick="TOPIC=\''+t.replace(/'/g,"\\'")+'\';render()">'+esc(t)+'</button>';}).join('');
   var lib = items.length ? '<div class="list">'+items.map(studyItem).join('')+'</div>' : '<div class="empty">'+(D.study.length?'Nothing under this topic yet.':'The library is ready for its first resource.')+'</div>';
-  var slides = D.lectureSlides.length ? '<div class="list">'+D.lectureSlides.map(function(d){return '<div class="li"><div><div class="t">'+esc(d.title)+'</div><div class="m">'+esc(d.long)+' · '+presenterHtml(d.presenter)+'</div></div>'+link(d.slides,'Slides','btn ghost')+'</div>';}).join('')+'</div>' : '<div class="empty">Lecture slides appear here once presenters add them.</div>';
+  var didCard = '<section class="card"><div class="row"><h2>Didactics</h2><a href="#didactics" onclick="go(\'didactics\');return false;">Schedule →</a></div><div class="sub" style="margin-top:-6px">Slides from every Wednesday lecture, grouped by theme. Presenters upload them from the Didactics page.</div>'+didacticsLibrary(TOPIC)+'</section>';
   return '<section class="page-h"><div class="eyebrow">SHARED LIBRARY · OPEN TO ALL RESIDENTS</div><h1>Study Materials</h1><p class="lead" style="margin:0">Slides, articles, videos and question banks, tagged by topic. Upload once and it is filed in the program Drive for everyone.</p></section>'+
-    '<div class="cols"><div class="main"><div class="pills">'+pills+'</div><section class="card"><h2>Library</h2>'+lib+'</section><section class="card"><h2>Recent lecture slides</h2>'+slides+'</section></div>'+
+    '<div class="cols"><div class="main"><div class="pills">'+pills+'</div>'+(onlyDid ? didCard : '<section class="card"><h2>Library</h2>'+lib+'</section>'+didCard)+'</div>'+
     '<aside class="side"><section class="card dark"><h2 style="font-size:22px">Add a resource</h2><p style="margin:0;font-size:15px;line-height:1.5;color:var(--onNight)">Upload a file or share a link. Pick a topic so others can find it.</p>'+(D.uploadForm?'<a class="btn sun" href="'+esc(D.uploadForm)+'" target="_blank" rel="noopener">Open the upload form <span aria-hidden="true">→</span></a>':'<div class="sub" style="color:var(--onNight)">Upload form not set up yet.</div>')+'</section></aside></div>';
 }
 
