@@ -375,6 +375,17 @@ main{container-type:inline-size}
 .dgrp+.dgrp{margin-top:10px}
 .dgh{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);padding:6px 0 2px;border-bottom:1px solid var(--line2)}
 .dgh span{color:var(--muted);margin-left:4px}
+.res{gap:10px}
+.res label{font-size:13.5px;font-weight:600;color:var(--onNight);margin-bottom:-4px}
+.res label .optl{font-weight:400;opacity:.8}
+.res input[type=text],.res input[type=url],.res select,.res textarea{width:100%;min-height:44px;border-radius:10px;border:1px solid var(--night3);background:var(--night2);color:#fff;font:inherit;font-size:16px;padding:8px 12px}
+.res textarea{resize:vertical}
+.res .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.res .two>div{display:flex;flex-direction:column;gap:6px}
+.res .filebox{display:flex;flex-direction:column;gap:2px;border:1.5px dashed var(--night3);border-radius:12px;padding:14px;cursor:pointer;color:#fff;margin:0}
+.res .filebox b{font-size:15px}.res .filebox span{font-size:12.5px;font-weight:400;color:var(--onNight)}
+.res .filebox:hover{border-color:var(--sun)}
+.res .rp{font-size:12.5px;color:var(--onNight);margin:0;line-height:1.45}
+.res .rmsg{background:var(--coralT);color:var(--coralInk);border-radius:10px;padding:8px 12px;font-size:13.5px;font-weight:600}
 .you{background:var(--sun);color:#1C2B2E;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700;margin-left:6px}
 </style>
 </head>
@@ -386,7 +397,7 @@ main{container-type:inline-size}
 (function(){
   if (window.google && google.script && google.script.run) return;
   var API_URL = 'https://script.google.com/macros/s/AKfycbw5_wuu7uNnzlj0n8NKzDCX6wml1hOyQeMA-zMfOVBUYxeWci9v4kKQTdeCrdhfYnHz3A/exec';
-  var WRITES = { submitSuggestion: 1, wellnessRespond: 1, wellnessIdea: 1, wellnessVote: 1, uploadSlides: 1 };
+  var WRITES = { submitSuggestion: 1, wellnessRespond: 1, wellnessIdea: 1, wellnessVote: 1, uploadSlides: 1, addResource: 1 };
   function call(fn, args, ok, fail){
     var req = WRITES[fn]
       ? fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args }) })
@@ -734,7 +745,7 @@ function applyNav(){
 window.addEventListener('resize', applyNav); window.addEventListener('orientationchange', applyNav); applyNav(); document.addEventListener('DOMContentLoaded', applyNav);
 /* Self-update: phones (especially home-screen apps) can keep an old copy of this page.
    On GitHub the page compares its build with version.json and reloads once when a newer build is published. */
-var BUILD = '2026-11-04b';
+var BUILD = '2026-11-04c';
 function checkBuild(){
   if (!/github\.io$/.test(location.hostname)) return;
   fetch('version.json?_=' + Date.now(), { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(v){
@@ -1112,6 +1123,52 @@ function didacticsLibrary(topic){
     }).join('')+'</div></div>';
   }).join('');
 }
+var RTYPES = ['PDF / Article','Slides','Video','Question Bank','Notes / Summary','Textbook Chapter','Link','Other'];
+var RES = { title:'', type:'PDF / Article', topic:'', mode:'file', link:'', desc:'', busy:false, msg:'', done:false }, RESFILE = null;
+function resSet(k, v){ RES[k] = v; }
+function resMode(m){ RES.mode = m; RES.msg = ''; rerenderKeep(); }
+function rerenderKeep(){ var y = window.scrollY; render(); window.scrollTo(0, y); }
+function resPick(input){ RESFILE = input.files && input.files[0] || null; RES.msg = ''; if (RESFILE && !RES.title) RES.title = RESFILE.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(); rerenderKeep(); }
+function resourceCard(){
+  if (!D.canAddResource) return '<section class="card dark"><h2 style="font-size:22px">Add a resource</h2><p style="margin:0;font-size:15px;line-height:1.5;color:var(--onNight)">Upload a file or share a link. Pick a topic so others can find it.</p>'+(D.uploadForm?'<a class="btn sun" href="'+esc(D.uploadForm)+'" target="_blank" rel="noopener">Open the upload form <span aria-hidden="true">→</span></a>':'')+'</section>';
+  if (RES.done) return '<section class="card dark res"><h2 style="font-size:22px">Added. Thank you!</h2><p class="rp">It’s in the library under <b>'+esc(RES.topic)+'</b> for everyone.</p><button type="button" class="btn sun" onclick="RES.done=false;rerenderKeep()">Add another</button></section>';
+  if (!RES.topic) RES.topic = (TOPIC && TOPIC!=='All' && TOPIC!=='Didactics') ? TOPIC : (D.topics[0]||'Other');
+  var me = (D.people||[]).filter(function(x){ return x.name===store('hubme'); })[0];
+  var opt = function(list, cur){ return list.map(function(t){ return '<option'+(t===cur?' selected':'')+'>'+esc(t)+'</option>'; }).join(''); };
+  var fileBox = RES.mode==='file'
+    ? '<label class="filebox" for="resfile">'+(RESFILE?'<b>'+esc(RESFILE.name)+'</b><span>'+(RESFILE.size<1048576?Math.max(1,Math.round(RESFILE.size/1024))+' KB':(RESFILE.size/1048576).toFixed(1)+' MB')+' · tap to change</span>':'<b>Choose a file</b><span>PDF, slides, Word, image or short video · up to 25 MB</span>')+'</label><input id="resfile" type="file" hidden accept=".pdf,.ppt,.pptx,.key,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.heic,.gif,.mp4,.mov,.m4a,.mp3,.txt" onchange="resPick(this)">'
+    : '<label class="sr" for="reslink">Link</label><input id="reslink" type="url" inputmode="url" placeholder="https://" value="'+esc(RES.link)+'" oninput="resSet(\'link\',this.value)">';
+  return '<section class="card dark res"><h2 style="font-size:22px">Add a resource</h2>'+
+    '<div class="seg3" role="group" aria-label="File or link"><button type="button" class="'+(RES.mode==='file'?'on':'')+'" onclick="resMode(\'file\')">Upload a file</button><button type="button" class="'+(RES.mode==='link'?'on':'')+'" onclick="resMode(\'link\')">Share a link</button></div>'+fileBox+
+    '<label for="restitle">Title</label><input id="restitle" type="text" maxlength="150" placeholder="e.g. EDX cognitive aid" value="'+esc(RES.title)+'" oninput="resSet(\'title\',this.value)">'+
+    '<div class="two"><div><label for="restype">Type</label><select id="restype" onchange="resSet(\'type\',this.value)">'+opt(RTYPES, RES.type)+'</select></div><div><label for="restopic">Topic</label><select id="restopic" onchange="resSet(\'topic\',this.value)">'+opt(D.topics, RES.topic)+'</select></div></div>'+
+    '<label for="resdesc">Why it’s useful <span class="optl">(optional)</span></label><textarea id="resdesc" maxlength="300" rows="2" placeholder="One line, e.g. high-yield for boards" oninput="resSet(\'desc\',this.value)">'+esc(RES.desc)+'</textarea>'+
+    (RES.msg?'<div class="rmsg">'+esc(RES.msg)+'</div>':'')+
+    '<button type="button" class="btn sun" '+(RES.busy?'disabled':'')+' onclick="sendResource()">'+(RES.busy?'Uploading… keep this page open':'Add to library')+'</button>'+
+    '<div class="rp">'+(me?'Shows as added by '+esc(me.short)+(/\.$/.test(me.short)?'':'.'):'Pick your name on Home so it shows who added it.')+'</div></section>';
+}
+function sendResource(){
+  if (RES.busy) return;
+  var ti = document.getElementById('restitle'); if (ti) RES.title = ti.value;
+  if (RES.title.trim().length < 2) { RES.msg = 'Add a title first.'; return rerenderKeep(); }
+  if (RES.mode==='file' && !RESFILE) { RES.msg = 'Choose a file, or switch to "Share a link".'; return rerenderKeep(); }
+  if (RES.mode==='link' && !/^https?:\/\/\S+$/i.test(RES.link.trim())) { RES.msg = 'Paste a full link starting with https://'; return rerenderKeep(); }
+  if (RES.mode==='file' && RESFILE.size > 25*1024*1024) { RES.msg = 'That file is over 25 MB. For videos, upload to YouTube or Drive and share the link instead.'; return rerenderKeep(); }
+  if (OFFLINE) { RES.msg = 'You look offline. Try again when you have signal.'; return rerenderKeep(); }
+  var me = (D.people||[]).filter(function(x){ return x.name===store('hubme'); })[0];
+  var send = function(b64){
+    RES.busy = true; RES.msg = ''; rerenderKeep();
+    google.script.run.withSuccessHandler(function(json){
+      RES.busy = false; var r = {}; try { r = JSON.parse(json); } catch (e) {}
+      if (r.ok) { RES.done = true; RES.title = ''; RES.link = ''; RES.desc = ''; RESFILE = null; reloadNow(); }
+      else RES.msg = {passcode:'Please reopen the Hub and enter the passcode.', type:'That kind of file can’t be added. Try a PDF.', size:'That file is too big.', link:'That link doesn’t look right.', title:'Add a title first.'}[r.error] || 'That didn’t go through. Try again.';
+      rerenderKeep();
+    }).withFailureHandler(function(){ RES.busy = false; RES.msg = 'That didn’t go through. Check your connection and try again.'; rerenderKeep(); })
+      .addResource({ title: RES.title.trim(), type: RES.type, topic: RES.topic, description: RES.desc.trim(), link: RES.mode==='link' ? RES.link.trim() : '', base64: b64 || '', fileName: RESFILE ? RESFILE.name : '', mimeType: RESFILE ? (RESFILE.type || 'application/octet-stream') : '', uploader: me ? me.short : '', passcode: store('hubpass') || '' });
+  };
+  if (RES.mode==='file') { var fr = new FileReader(); fr.onload = function(){ send(String(fr.result).split(',')[1] || ''); }; fr.readAsDataURL(RESFILE); }
+  else send('');
+}
 function study(){
   var onlyDid = TOPIC === 'Didactics';
   var items = D.study.filter(function(x){return TOPIC==='All'||x.topic===TOPIC;});
@@ -1120,7 +1177,7 @@ function study(){
   var didCard = '<section class="card"><div class="row"><h2>Didactics</h2><a href="#didactics" onclick="go(\'didactics\');return false;">Schedule →</a></div><div class="sub" style="margin-top:-6px">Slides from every Wednesday lecture, grouped by theme. Presenters upload them from the Didactics page.</div>'+didacticsLibrary(TOPIC)+'</section>';
   return '<section class="page-h"><div class="eyebrow">SHARED LIBRARY · OPEN TO ALL RESIDENTS</div><h1>Study Materials</h1><p class="lead" style="margin:0">Slides, articles, videos and question banks, tagged by topic. Upload once and it is filed in the program Drive for everyone.</p></section>'+
     '<div class="cols"><div class="main"><div class="pills">'+pills+'</div>'+(onlyDid ? didCard : '<section class="card"><h2>Library</h2>'+lib+'</section>'+didCard)+'</div>'+
-    '<aside class="side"><section class="card dark"><h2 style="font-size:22px">Add a resource</h2><p style="margin:0;font-size:15px;line-height:1.5;color:var(--onNight)">Upload a file or share a link. Pick a topic so others can find it.</p>'+(D.uploadForm?'<a class="btn sun" href="'+esc(D.uploadForm)+'" target="_blank" rel="noopener">Open the upload form <span aria-hidden="true">→</span></a>':'<div class="sub" style="color:var(--onNight)">Upload form not set up yet.</div>')+'</section></aside></div>';
+    '<aside class="side">'+resourceCard()+'</aside></div>';
 }
 
 function fileList(list, emptyText){
